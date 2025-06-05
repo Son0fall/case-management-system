@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>404 - Page Not Found</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; background: #f8f8f8; }
+        .container { padding: 50px; }
+        h1 { font-size: 50px; color: #ff5733; }
+        p { font-size: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>404</h1>
+        <p>Oops! The page you're looking for doesn’t exist.</p>
+        <a href="javascript:history.back()" class="return-link">Return to Previous Page</a>
+    </div>
+</body>
+</html>

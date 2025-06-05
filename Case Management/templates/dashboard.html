@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Police Case Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/reports.js') }}" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+    document.getElementById('add-user-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    let formData = new FormData(this);
+
+    fetch('/add_user', { method: 'POST', body: formData })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            window.location.href = "/dashboard?view=view_list";  // Redirect to updated user list
+        });
+});
+
+document.getElementById('add-case-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    let formData = new FormData(this);
+
+    fetch('/add_case', { method: 'POST', body: formData })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            window.location.href = "/dashboard?view=view_cases";  // Redirect to updated cases list
+        });
+});
+function previewImage(event, userId) {
+    var reader = new FileReader();
+    reader.onload = function(){
+        var output = document.getElementById('preview-' + userId);
+        output.src = reader.result;
+    };
+    reader.readAsDataURL(event.target.files[0]);
+}
+function editUser(id, username, role, avatarPath) {
+    // Populate form fields with user data
+    document.getElementById('user_id').value = id;
+    document.getElementById('username').value = username;
+    document.getElementById('role').value = role;
+
+    // Update avatar preview
+    const avatarPreview = document.getElementById('avatar_preview');
+    if (avatarPath) {
+        avatarPreview.src = avatarPath; // Show avatar from the database
+        avatarPreview.style.display = 'block';
+    } else {
+        avatarPreview.src = '';
+        avatarPreview.style.display = 'none';
+    }
+}
+
+function previewAvatar() {
+    // Show avatar preview when a new image is uploaded
+    const file = document.getElementById('avatar_path').files[0];
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+        document.getElementById('avatar_preview').src = e.target.result;
+    };
+
+    if (file) {
+        reader.readAsDataURL(file);
+    }
+}
+document.getElementById("new_user").addEventListener("click", function () {
+    document.getElementById("addUserModal").style.display = "block";
+});
+
+function closeModal() {
+    document.getElementById("addUserModal").style.display = "none";
+}
+
+function previewNewAvatar() {
+    const file = document.getElementById('new_avatar').files[0];
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+        document.getElementById('new_avatar_preview').src = e.target.result;
+    };
+
+    if (file) {
+        reader.readAsDataURL(file);
+    }
+}
+
+    </script>
+</head>
+<body>
+    <!-- Header -->
+<header class="header">
+  <!-- Left Section -->
+  <div class="header-left">
+    <button id="toggle-sidebar-btn" class="header-btn">
+      <i class="fa fa-bars"></i>
+    </button>
+    <span class="header-title">Police Case Management</span>
+  </div>
+  
+  <!-- Center Section (Profile Dropdown) -->
+  <div class="header-center" id="dropdown-container">
+    <button type="button" class="profile-button dropdown-toggle" data-toggle="dropdown">
+      <img src="{{ user.avatar_path }}" class="user-img" alt="User Image">
+      <span id="logged-in-user">{{ user.username }}</span>
+      <i id="dropdown-icon" class="fa fa-caret-down"></i>
+    </button>
+
+    <div class="dropdown-menu">
+      <a href="{{ url_for('dashboard', view='manage_account') }}">
+        <span class="fa fa-user"></span> Manage My Account
+      </a>
+      <a href="{{ url_for('logout') }}">
+        <i class="fa fa-sign-out-alt"></i> Logout
+      </a>
+    </div>
+  </div>
+</header>
+
+
+    <!-- Sidebar -->
+<aside id="sidebar" class="sidebar">
+    <ul>
+        <li class="tittle">
+            <span id="logged-in-user">----- {{ user.role }}- PANEL ------</span>
+        </li>
+        <li>
+            <a href="{{ url_for('dashboard', view='cards') }}">
+                <i class="nav-icon fas fa-tachometer-alt"></i>
+                <p class="active"> Dashboard </p>
+            </a>
+        </li>
+        <li class="tittle">Maintenance</li>
+        <li>
+            <a href="{{ url_for('dashboard', view='add_case') }}">
+                <i class="fa fa-plus"></i>
+                <p> Add Case </p>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('dashboard', view='view_cases') }}">
+                <i class="nav-icon fas fa-scroll"></i>
+                <p> Case List </p>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('dashboard', view='view_list') }}">
+                <i class="fa fa-users"></i>
+                <p> User List </p>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('dashboard', view='add_user') }}">
+                <i class="fa fa-user-plus"></i>
+                <p> Add User </p>
+            </a>
+        </li>
+        <li class="tittle">Reports</li>
+        <li>
+            <a href="/reports">
+                <i class="fa fa-chart-line"></i>
+                <p> Reports </p>
+            </a>
+        </li>
+        <li class="tittle">Other</li>
+        <li>
+            <a href="{{ url_for('logout') }}">
+                <i class="fa fa-sign-out-alt"></i>
+                <p> Logout </p>
+            </a>
+        </li>
+    </ul>
+</aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% if view == 'cards' %}
+        <!-- Cards Section -->
+        <section class="cards">
+            <div class="card">
+                <h3>Total Cases</h3>
+                <p>{{ total_cases }}</p>
+            </div>
+            <div class="card">
+                <h3>Pending Cases</h3>
+                <p>{{ pending_cases }}</p>
+            </div>
+            <div class="card">
+                <h3>Resolved Cases</h3>
+                <p>{{ resolved_cases }}</p>
+            </div>
+            <div class="card">
+                <h3>Cancelled Cases</h3>
+                <p>{{ cancelled_cases }}</p>
+            </div>
+        </section>
+        <!-- Decorative Image -->
+        <section class="decorative-image">
+            <img src="{{ url_for('static', filename='images/decorative.png') }}" alt="Decorative Image">
+        </section>
+
+{% elif view == 'manage_account' %}
+<!-- Manage Account Section -->
+<section class="manage-account-section form-container">
+  <form method="POST" action="/manage_account" class="manage-account-form form-grid">
+    <!-- Row 1: Username (left) and Email (right) -->
+    <div class="form-group">
+      <label for="username">Username:</label>
+      <input type="text" id="username" name="username" value="{{ user.username }}" required>
+    </div>
+    <div class="form-group">
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" value="{{ user.email }}" required>
+    </div>
+    
+    <!-- Row 2: Role (left) and Profile Image (right) -->
+    <div class="form-group">
+      <label for="role">Role:</label>
+      <select id="role" name="role">
+        <option value="user.admin">Admin</option>
+        <option value="user.officer">Officer</option>
+        <option value="user.viewer">Viewer</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="avatar_path">Profile Image:</label>
+      <input type="file" id="avatar_path" name="avatar_path" accept=".jpg,.jpeg,.png">
+    </div>
+    
+    <!-- Row 3: Password spanning full width -->
+    <div class="form-group full-width">
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" placeholder="Enter new password" required>
+    </div>
+    
+    <!-- Row 4: Submit button spanning full width -->
+    <div class="form-group full-width">
+      <button type="submit">Update</button>
+    </div>
+  </form>
+</section>
+
+{% elif view == 'add_user' %}
+<!-- Add User Form -->
+<section class="add-user-section form-container">
+  <h2>Add New User</h2>
+  <form id="add-user-form" method="POST" action="{{ url_for('add_user') }}" class="form-grid">
+    <!-- Row 1: Username (left) and Email (right) -->
+    <div class="form-group">
+      <label for="username">Username:</label>
+      <input type="text" id="username" name="username" required>
+    </div>
+    <div class="form-group">
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required>
+    </div>
+    
+    <!-- Row 2: Password (left) and Role (right) -->
+    <div class="form-group">
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" required>
+    </div>
+    <div class="form-group">
+      <label for="role">Role:</label>
+      <select id="role" name="role">
+        <option value="admin">Admin</option>
+        <option value="officer">Officer</option>
+        <option value="viewer">Viewer</option>
+      </select>
+    </div>
+    
+    <!-- Row 3: Profile Image spanning one column -->
+    <div class="form-group">
+      <label for="avatar_path">Profile Image:</label>
+      <input type="file" id="avatar_path" name="avatar_path" accept=".jpg,.jpeg,.png">
+    </div>
+    
+    <!-- Row 4: Submit button spanning full width -->
+    <div class="form-group full-width">
+      <button type="submit">Add User</button>
+    </div>
+  </form>
+</section>
+
+{% elif view == 'view_list' %}
+<section class="view-users-section scrollable-section">
+  <h2>User Management</h2>
+  <div class="view-users-container">
+    <div class="row">
+      <div class="col-lg-12">
+        <!-- Button to open the "Add New User" modal -->
+        <button class="btn btn-primary float-right btn-sm" id="new_user">
+          <i class="fa fa-plus"></i> New user
+        </button>
+      </div>
+    </div>
+
+    <!-- Update User Form (Right Side) -->
+    <div class="update-user-form">
+      <!-- Note: action is initially blank; it will be set via JavaScript -->
+      <form id="user-form" method="POST" action="" enctype="multipart/form-data">
+        <input type="hidden" id="user_id" name="user_id" value="">
+        <div class="card-header">User Details Form</div>
+        <div class="form-group">
+          <label for="email">Email:</label>
+          <input type="email" id="email" name="email" required value="">
+        </div>
+        <div class="form-group">
+          <label for="username">Username:</label>
+          <input type="text" id="username" name="username" required value="">
+        </div>
+        <div class="form-group">
+          <label for="password">Password:</label>
+          <input type="password" id="password" name="password">
+          <small class="form-text text-muted">If you don't want to change the password, leave this field blank.</small>
+        </div>
+        <div class="form-group">
+          <label for="role">Role:</label>
+          <select id="role" name="role">
+            <option value="admin">Admin</option>
+            <option value="officer">Officer</option>
+            <option value="viewer">Viewer</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="avatar_path">Avatar:</label>
+          <input type="file" id="avatar_path" name="avatar_path" accept=".png, .jpg, .jpeg" onchange="previewAvatar()">
+          <div class="avatar-preview">
+            <img id="avatar_preview" src="#" alt="Avatar Preview">
+          </div>
+        </div>
+        <div class="card-footer">
+          <button type="submit" class="btn btn-primary float-right btn-sm">Save</button>
+          <button type="button" class="btn cancel-btn" onclick="resetForm()">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- User List Table (Left Side) -->
+    <div class="users-table scrollable-table-container">
+      <table class="responsive-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Avatar</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Created At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td><img src="{{ u.avatar_path }}" alt="Avatar" class="user-avatar"></td>
+            <td>{{ u.username }}</td>
+            <td>{{ u.role }}</td>
+            <td>{{ u.created_at }}</td>
+            <td class="action-buttons">
+              <!-- When Edit is clicked, pass this user's information -->
+              <button class="btn btn-primary float-right btn-sm"
+                      onclick="editUser({{ u.id }}, '{{ u.email }}', '{{ u.username }}', '{{ u.role }}', '{{ u.avatar_path }}')">
+                Edit
+              </button>
+              <a href="{{ url_for('delete_user', user_id=u.id) }}"
+                 class="btn delete-btn"
+                 onclick="return confirm('Are you sure you want to delete this user?');">
+                Delete
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Add User Modal -->
+  <div id="addUserModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal()">&times;</span>
+      <h2>Add New User</h2>
+      <form id="new-user-form" method="POST" action="{{ url_for('add_user') }}" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="new_username">Username:</label>
+          <input type="text" id="new_username" name="username" required>
+        </div>
+        <div class="form-group">
+          <label for="new_email">Email:</label>
+          <input type="email" id="new_email" name="email" required>
+        </div>
+        <div class="form-group">
+          <label for="new_password">Password:</label>
+          <input type="password" id="new_password" name="password" required>
+        </div>
+        <div class="form-group">
+          <label for="new_role">Role:</label>
+          <select id="new_role" name="role">
+            <option value="admin">Admin</option>
+            <option value="officer">Officer</option>
+            <option value="viewer">Viewer</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="new_avatar">Avatar:</label>
+          <input type="file" id="new_avatar" name="avatar_path" accept=".png, .jpg, .jpeg" onchange="previewNewAvatar()">
+          <div class="avatar-preview">
+            <img id="new_avatar_preview" src="#" alt="Avatar Preview">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn save-btn">Save</button>
+          <button type="button" class="btn cancel-btn" onclick="closeModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+{% elif view == 'view_cases' %}
+<!-- View Cases Table -->
+<section class="view-cases-section scrollable-section">
+    <h2>Case List</h2>
+    <div class="table-responsive">
+        <table class="responsive-table">
+            <thead>
+                <tr>
+                    <th>Case Number</th>
+                    <th>Description</th>
+                    <th>Crime Type</th>
+                    <th>Status</th>
+                    <th>Created By</th>
+                    <th>Assigned To</th>
+                    <th>Court Date</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for case in cases %}
+                <tr>
+                    <td>{{ case.case_number }}</td>
+                    <td>{{ case.description }}</td>
+                    <td>{{ case.crime_type }}</td>
+                    <td>{{ case.status }}</td>
+                    <td>{{ case.created_by }}</td>
+                    <td>{{ case.assigned_to }}</td>
+                    <td>{{ case.court_date }}</td>
+                    <td>{{ case.created_at }}</td>
+                    <td class="action-buttons">
+                        <a href="{{ url_for('update_case', case_id=case.id) }}" class="edit">
+                            <i class="fa fa-edit"></i> Edit
+                        </a>
+                        <a href="{{ url_for('delete_case', case_id=case.id) }}" class="delete" onclick="return confirm('Are you sure you want to delete this case?')">
+                            <i class="fa fa-trash"></i> Delete
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% elif view == 'update_case' %}
+<!-- Update Case Form -->
+<section class="update-case-section form-container">
+  <h2>Update Case</h2>
+  <form id="update-case-form" method="POST" action="{{ url_for('update_case', case_id=case.id) }}">
+    
+    <!-- Row 1: Basic Details -->
+    <div class="form-row">
+      <div class="form-column">
+        <label for="case_number">Case Number:</label>
+        <input type="text" id="case_number" name="case_number" value="{{ case.case_number }}" required>
+      </div>
+      <div class="form-column">
+        <label for="description">Description:</label>
+        <input type="text" id="description" name="description" value="{{ case.description }}" required>
+      </div>
+    </div>
+
+    <!-- Row 2: Status and Court Date -->
+    <div class="form-row">
+      <div class="form-column">
+        <label for="status">Status:</label>
+        <select id="status" name="status" required>
+          <option value="Pending" {% if case.status == "Pending" %}selected{% endif %}>Pending</option>
+          <option value="Resolved" {% if case.status == "Resolved" %}selected{% endif %}>Resolved</option>
+          <option value="Cancelled" {% if case.status == "Cancelled" %}selected{% endif %}>Cancelled</option>
+        </select>
+      </div>
+      <div class="form-column">
+        <label for="court_date">Court Date:</label>
+        <input type="date" id="court_date" name="court_date" value="{{ case.court_date }}">
+      </div>
+    </div>
+
+    <!-- Row 3: User Assignment -->
+    <div class="form-row">
+      <div class="form-column">
+        <label for="created_by">Created By:</label>
+        <select id="created_by" name="created_by">
+          {% for user in users %}
+          <option value="{{ user.id }}" {% if case.created_by == user.username %}selected{% endif %}>
+            {{ user.username }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-column">
+        <label for="assigned_to">Assigned To:</label>
+        <select id="assigned_to" name="assigned_to">
+          {% for user in users %}
+          <option value="{{ user.id }}" {% if case.assigned_to == user.username %}selected{% endif %}>
+            {{ user.username }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <!-- Row 4: Crime Type -->
+    <div class="form-row">
+      <div class="form-column full-width">
+        <label for="crime_type">Crime Type:</label>
+        <select id="crime_type" name="crime_type" required>
+          <option value="Burglary" {% if case.crime_type == "Burglary" %}selected{% endif %}>Burglary</option>
+          <option value="Robbery" {% if case.crime_type == "Robbery" %}selected{% endif %}>Robbery</option>
+          <option value="Assault" {% if case.crime_type == "Assault" %}selected{% endif %}>Assault</option>
+          <option value="Homicide" {% if case.crime_type == "Homicide" %}selected{% endif %}>Homicide</option>
+          <option value="Fraud" {% if case.crime_type == "Fraud" %}selected{% endif %}>Fraud</option>
+          <option value="Other" {% if case.crime_type == "Other" %}selected{% endif %}>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="form-row">
+      <button type="submit" class="save-btn">Save Changes</button>
+    </div>
+  </form>
+</section>
+
+{% elif view == 'add_case' %}
+<!-- Add Case Form -->
+<section class="add-case-section form-container">
+  <h2>Add New Case</h2>
+  <form id="add-case-form" method="POST" action="{{ url_for('add_case') }}">
+    
+    <!-- Row 1: Basic Details -->
+    <div class="form-row form-row1">
+      <div class="form-column">
+        <label for="case_number">Case Number:</label>
+        <input type="text" id="case_number" name="case_number" required>
+      </div>
+      <div class="form-column">
+        <label for="description">Description:</label>
+        <textarea id="description" name="description" required></textarea>
+      </div>
+    </div>
+
+    <!-- Row 2: Status and Court Date -->
+    <div class="form-row form-row1">
+      <div class="form-column">
+        <label for="status">Status:</label>
+        <select id="status" name="status">
+          <option value="Pending">Pending</option>
+          <option value="Resolved">Resolved</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="form-column">
+        <label for="court_date">Court Date:</label>
+        <input type="date" id="court_date" name="court_date">
+      </div>
+    </div>
+
+    <!-- Row 3: User Assignment -->
+    <div class="form-row form-row1">
+      <div class="form-column">
+        <label for="created_by">Created By:</label>
+        <select id="created_by" name="created_by">
+          {% for user in users %}
+          <option value="{{ user.id }}">{{ user.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-column">
+        <label for="assigned_to">Assigned To:</label>
+        <select id="assigned_to" name="assigned_to">
+          {% for user in users %}
+          <option value="{{ user.id }}">{{ user.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <!-- Row 4: Crime Type -->
+    <div class="form-row form-row1">
+      <div class="form-column full-width">
+        <label for="crime_type">Crime Type:</label>
+        <select id="crime_type" name="crime_type" required>
+          <option value="Burglary">Burglary</option>
+          <option value="Robbery">Robbery</option>
+          <option value="Assault">Assault</option>
+          <option value="Homicide">Homicide</option>
+          <option value="Fraud">Fraud</option>
+          <option value="Other" selected>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="form-row">
+      <button type="submit" class="add-case-btn">Add Case</button>
+    </div>
+  </form>
+</section>
+
+{% elif view == 'reports' %}
+<!-- Reports Section -->
+<section class="reports-section">
+  <h2>Police Case Reports</h2>
+  <!-- Grid container for report boxes -->
+  <div class="reports-grid">
+    <!-- Case Status Summary (Table and Pie Chart) -->
+    <div class="report-box">
+      <h3>Case Status Summary</h3>
+      <div class="report-content scrollable-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Total Cases</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cs in case_status %}
+            <tr>
+              <td>{{ cs.status }}</td>
+              <td>{{ cs.total }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <canvas id="caseStatusChart"></canvas>
+    </div>
+
+    <!-- Crime Analysis -->
+    <div class="report-box">
+      <h3>Crime Analysis</h3>
+      <div class="report-content scrollable-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Crime Type</th>
+              <th>Frequency</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for crime in crime_stats %}
+            <tr>
+              <td>{{ crime.crime_type }}</td>
+              <td>{{ crime.frequency }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Officer Activity -->
+    <div class="report-box">
+      <h3>Officer Activity</h3>
+      <div class="report-content scrollable-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Officer</th>
+              <th>Cases Handled</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for officer in officer_activity %}
+            <tr>
+              <td>{{ officer.username }}</td>
+              <td>{{ officer.cases_handled }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Arrests & Convictions -->
+    <div class="report-box">
+      <h3>Arrests & Convictions</h3>
+      <div class="report-content scrollable-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Suspect Name</th>
+              <th>Outcome</th>
+              <th>Arrest Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for arrest in arrest_records %}
+            <tr>
+              <td>{{ arrest.suspect_name }}</td>
+              <td>{{ arrest.outcome }}</td>
+              <td>{{ arrest.arrest_date }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Upcoming Court Dates -->
+    <div class="report-box">
+      <h3>Upcoming Court Dates</h3>
+      <div class="report-content scrollable-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Case Number</th>
+              <th>Court Date</th>
+              <th>Judge</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for court in court_schedules %}
+            <tr>
+              <td>{{ court.case_number }}</td>
+              <td>{{ court.court_date }}</td>
+              <td>{{ court.judge }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Event Log Summary (Pie Chart) -->
+    <div class="report-box">
+      <h3>Overall Event Log Summary</h3>
+      <div class="report-content">
+        <canvas id="eventLogChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Detailed Event Log Table for Current User -->
+    <div class="report-box">
+      <h3>My Event Log</h3>
+      <div class="report-content scrollable-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Event ID</th>
+              <th>Type</th>
+              <th>Description</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for event in user_events %}
+            <tr>
+              <td>{{ event.event_id }}</td>
+              <td>{{ event.event_type }}</td>
+              <td>{{ event.event_description }}</td>
+              <td>{{ event.event_date }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Event Log Indicator (Bar Chart) -->
+    <div class="report-box">
+      <h3>Event Log Indicator (Bar Chart)</h3>
+      <div class="report-content">
+        <canvas id="eventLogBarChart"></canvas>
+      </div>
+    </div>
+    
+  </div>
+</section>
+
+{% else %}
+<!-- Default Message -->
+<h2>This web page is under Maintenance please be patient with us </h2>
+{% endif %}
+</main>
+<!-- Footer -->
+    <footer class="footer">
+        Copyright &copy;&nbsp;&nbsp;<span id="current-year"></span>&nbsp;&nbsp;&nbsp; Police Case Management System
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <p><b>PCMS</b> - Py (by: <a href="mailto=njebzncele@gmail.com" target="blank">Son of all</a> )&nbsp; v1.0</p>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+// Helper function to convert event_summary data for Chart.js
+function getChartData(data, labelField, valueField) {
+  var labels = [];
+  var values = [];
+  data.forEach(function(item) {
+    labels.push(item[labelField]);
+    values.push(item[valueField]);
+  });
+  return { labels: labels, values: values };
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Ensure event_summary has data. If it's undefined, default to an empty array.
+  var rawEventData = {{ event_summary|default([])|tojson }};
+
+  // Check if we have valid data; if not, use default sample data.
+  if (!Array.isArray(rawEventData) || rawEventData.length === 0) {
+    rawEventData = [
+      { event_type: "Sample", total: 1 }
+    ];
+  }
+
+  // Process data into labels and values for Chart.js
+  var eventData = getChartData(rawEventData, 'event_type', 'total');
+
+  // Get the canvas context
+  var ctx = document.getElementById('eventLogChart').getContext('2d');
+
+  // Create the pie chart
+  new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: eventData.labels,
+      datasets: [{
+        data: eventData.values,
+        backgroundColor: ['#9c27b0', '#e91e63', '#3f51b5', '#009688', '#ff5722']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Overall Event Log Summary'
+        },
+        legend: {
+          position: 'bottom'
+        }
+      }
+    }
+  });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Use the event_summary data passed from the backend.
+  // It defaults to an empty array if not provided.
+  var rawEventData = {{ event_summary|default([])|tojson }};
+  
+  // Prepare arrays for labels and data.
+  var labels = [];
+  var data = [];
+  rawEventData.forEach(function(item) {
+    labels.push(item.event_type);  // e.g., "Login", "Update Case", etc.
+    data.push(item.total);
+  });
+
+  // Create the bar chart for the event log indicator.
+  var ctxBar = document.getElementById('eventLogBarChart').getContext('2d');
+  new Chart(ctxBar, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Number of Events',
+        data: data,
+        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      },
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom'
+        },
+        title: {
+          display: true,
+          text: 'Event Log Indicator'
+        }
+      }
+    }
+  });
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update User</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <form method="POST" action="/update_user/{{ user.id }}" class="update-user-form">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" value="{{ user.username }}" required>
+
+        <label for="role">Role:</label>
+        <input type="text" id="role" name="role" value="{{ user.role }}" required>
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" placeholder="Enter new password" required>
+
+        <label for="avatar_path">Avatar Path:</label>
+        <input type="text" id="avatar_path" name="avatar_path" value="{{ user.avatar_path }}" required>
+
+        <button type="submit">Save Changes</button>
+    </form>
+</body>
+</html>

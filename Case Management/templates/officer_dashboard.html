@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Officer || Constable Dashboard | Police Case Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        function refreshDashboard() {
+            let currentView = new URL(window.location.href).searchParams.get("view") || "cards";
+
+    fetch("{{ url_for('dashboard') }}?view=" + currentView)
+        .then(response => response.text())
+        .then(html => {
+            let tempDiv = document.createElement("div");
+            tempDiv.innerHTML = html;
+
+            // Update only the required sections
+            document.querySelector(".main-content").innerHTML = tempDiv.querySelector(".main-content").innerHTML;
+        })
+        .catch(error => console.error("Error refreshing dashboard:", error));
+}
+
+// Set refresh rate to every 30 seconds to reduce system load
+setInterval(refreshDashboard, 30000);
+
+    document.getElementById('add-user-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    let formData = new FormData(this);
+
+    fetch('/add_user', { method: 'POST', body: formData })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            window.location.href = "/dashboard?view=view_list";  // Redirect to updated user list
+        });
+});
+
+document.getElementById('add-case-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    let formData = new FormData(this);
+
+    fetch('/add_case', { method: 'POST', body: formData })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            window.location.href = "/dashboard?view=view_cases";  // Redirect to updated cases list
+        });
+});
+function previewImage(event, userId) {
+    var reader = new FileReader();
+    reader.onload = function(){
+        var output = document.getElementById('preview-' + userId);
+        output.src = reader.result;
+    };
+    reader.readAsDataURL(event.target.files[0]);
+}
+function editUser(id, username, role, avatarPath) {
+    // Populate form fields with user data
+    document.getElementById('user_id').value = id;
+    document.getElementById('username').value = username;
+    document.getElementById('role').value = role;
+
+    // Update avatar preview
+    const avatarPreview = document.getElementById('avatar_preview');
+    if (avatarPath) {
+        avatarPreview.src = avatarPath; // Show avatar from the database
+        avatarPreview.style.display = 'block';
+    } else {
+        avatarPreview.src = '';
+        avatarPreview.style.display = 'none';
+    }
+}
+
+function previewAvatar() {
+    // Show avatar preview when a new image is uploaded
+    const file = document.getElementById('avatar_path').files[0];
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+        document.getElementById('avatar_preview').src = e.target.result;
+    };
+
+    if (file) {
+        reader.readAsDataURL(file);
+    }
+}
+document.getElementById("new_user").addEventListener("click", function () {
+    document.getElementById("addUserModal").style.display = "block";
+});
+
+function closeModal() {
+    document.getElementById("addUserModal").style.display = "none";
+}
+
+function previewNewAvatar() {
+    const file = document.getElementById('new_avatar').files[0];
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+        document.getElementById('new_avatar_preview').src = e.target.result;
+    };
+
+    if (file) {
+        reader.readAsDataURL(file);
+    }
+}
+
+    </script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <!-- Left Section -->
+        <div class="header-left">
+            <button id="toggle-sidebar-btn" class="header-btn">
+                <i class="fa fa-bars"></i>
+                </button>
+            <span class="header-title">Police Case Management</span>
+        </div>
+        
+        <!-- Center Section -->
+        <div class="header-center" id="dropdown-container">
+            <button type="button" class="profile-button dropdown-toggle" data-toggle="dropdown">
+                <img src="{{ user.avatar_path }}" class="user-img" alt="User Image">
+               <span id="logged-in-user">{{ user.username }}</span>
+               <i id="dropdown-icon" class="fa fa-caret-down"></i>
+            </button>
+            
+
+           <div class="dropdown-menu">
+           <a href="{{ url_for('dashboard', view='manage_account') }}"><span class="fa fa-user"></span>Manage My Account</a>
+           <a href="{{ url_for('logout') }}"><i class="fa fa-sign-out-alt"></i>Logout</a>
+           </div>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+        <ul>
+            <li><a href="{{ url_for('dashboard', view='add_case') }}">Add Case</a></li>
+            <li><a href="{{ url_for('dashboard', view='update_case') }}">Update Case</a></li>
+            <li><a href="{{ url_for('dashboard', view='view_cases') }}">View Cases</a></li>
+            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% if view == 'cards' %}
+        <!-- Cards Section -->
+        <section class="cards">
+            <div class="card">
+                <h3>Total Cases</h3>
+                <p>{{ total_cases }}</p>
+            </div>
+            <div class="card">
+                <h3>Pending Cases</h3>
+                <p>{{ pending_cases }}</p>
+            </div>
+            <div class="card">
+                <h3>Resolved Cases</h3>
+                <p>{{ resolved_cases }}</p>
+            </div>
+            <div class="card">
+                <h3>Cancelled Cases</h3>
+                <p>{{ cancelled_cases }}</p>
+            </div>
+        </section>
+        <!-- Decorative Image -->
+        <section class="decorative-image">
+            <img src="{{ url_for('static', filename='images/decorative.png') }}" alt="Decorative Image">
+        </section>
+        {% elif view == 'manage_account' %}
+        <!-- Manage Account Section -->
+        <section class="manage-account-section">
+            <form method="POST" action="/manage_account" class="manage-account-form">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" value="{{ user.username }}" required>
+
+                <label for="role">Role:</label>
+                <select id="role" name="role">
+                    <option value="user.admin">Admin</option>
+                    <option value="user.officer">Officer</option>
+                    <option value="user.viewer">Viewer</option>
+                </select>
+
+                <label for="avatar_path">Profile Image:</label>
+                <input type="file" id="avatar_path" name="avatar_path" accept=".jpg,.jpeg,.png">
+
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" placeholder="Enter new password" required>
+
+                <button type="submit">Update</button>
+            </form>
+        </section>
+        {% elif view == 'view_list' %}
+<section class="view-users-section">
+    <h2>User Management</h2>
+    <div class="view-users-container">
+        <div class="row">
+	         <div class="col-lg-12">
+			   <button class="btn btn-primary float-right btn-sm" id="new_user"><i class="fa fa-plus"></i> New user</button>
+	         </div>
+        </div>
+        <!-- FORM Panel (Right Side) -->
+            <form id="user-form" method="POST" action="{{ url_for('update_user', user_id=user.id) }}" enctype="multipart/form-data">
+                <input type="hidden" id="user_id" name="user_id">
+                <div class="card-header">
+                    <div class="card-header">User Details Form</div>
+                </div>
+                        <div class="form-group">
+                            <label for="username">Username:</label>
+                            <input type="text" id="username" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password:</label>
+                            <input type="password" id="password" name="password">
+                            <small class="form-text text-muted">If you don't want to change the password, leave this field blank.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="role">Role:</label>
+                            <select id="role" name="role">
+                                <option value="admin">Admin</option>
+                                <option value="officer">Officer</option>
+                                <option value="viewer">Viewer</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="avatar_path">Avatar:</label>
+                            <input type="file" id="avatar_path" name="avatar_path" accept=".png, .jpg, .jpeg" onchange="previewAvatar()">
+                            <div class="avatar-preview">
+                                <img id="avatar_preview" src="#" alt="Avatar Preview">
+                            </div>
+                        </div>
+                    <div class="card-footer">
+                              <button type="submit" class="btn btn-primary float-right btn-sm">Save</button>
+                              <button type="button" class="btn cancel-btn" onclick="resetForm()">Cancel</button>
+
+                    </div>
+            </form>
+
+        <!-- User List Table (Left Side) -->
+        <div class="users-table">
+                    <table class="responsive-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Avatar</th>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td><img src="{{ user.avatar_path }}" alt="Avatar" class="user-avatar"></td>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.role }}</td>
+                                <td>{{ user.created_at }}</td>
+                                <td class="action-buttons">
+                                    <button
+                                        class="btn btn-primary float-right btn-sm"
+                                        onclick="editUser({{ user.id }}, '{{ user.username }}', '{{ user.role }}', '{{ user.avatar_path }}')">Edit</button>
+                                    <a href="{{ url_for('delete_user', user_id=user.id) }}"
+                                       class="btn delete-btn"
+                                       onclick="return confirm('Are you sure you want to delete this user?');">
+                                       Delete
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+        </div>
+</div>
+    <!-- Add User Modal -->
+<div id="addUserModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <h2>Add New User</h2>
+        <form id="new-user-form" method="POST" action="{{ url_for('add_user') }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="new_username">Username:</label>
+                <input type="text" id="new_username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="new_password">Password:</label>
+                <input type="password" id="new_password" name="password" required>
+            </div>
+            <div class="form-group">
+                <label for="new_role">Role:</label>
+                <select id="new_role" name="role">
+                    <option value="admin">Admin</option>
+                    <option value="officer">Officer</option>
+                    <option value="viewer">Viewer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="new_avatar">Avatar:</label>
+                <input type="file" id="new_avatar" name="avatar_path" accept=".png, .jpg, .jpeg" onchange="previewNewAvatar()">
+                <div class="avatar-preview">
+                    <img id="new_avatar_preview" src="#" alt="Avatar Preview">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn save-btn">Save</button>
+                <button type="button" class="btn cancel-btn" onclick="closeModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+</section>
+
+
+{% elif view == 'view_cases' %}
+<!-- View Cases Table -->
+<section class="view-cases-section">
+    <h2>Case List</h2>
+    <table class="responsive-table">
+        <thead>
+            <tr>
+                <th>Case Number</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Created By</th>
+                <th>Assigned To</th>
+                <th>Court Date</th>
+                <th>Created At</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for case in cases %}
+            <tr>
+                <td>{{ case.case_number }}</td>
+                <td>{{ case.description }}</td>
+                <td>{{ case.status }}</td>
+                <td>{{ case.created_by }}</td>
+                <td>{{ case.assigned_to }}</td>
+                <td>{{ case.court_date }}</td>
+                <td>{{ case.created_at }}</td>
+                <td class="action-buttons">
+                    <a href="{{ url_for('update_case', case_id=case.id) }}" class="edit"><i class="fa fa-edit"></i> Edit</a>
+                    <a href="{{ url_for('delete_case', case_id=case.id) }}" class="delete" onclick="return confirm('Are you sure you want to delete this case?')"><i class="fa fa-trash"></i> Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% elif view == 'update_case' %}
+<!-- Update Case Form -->
+<section class="update-case-section">
+    <h2>Update Case</h2>
+    <form id="update-case-form" method="POST" action="{{ url_for('update_case', case_id=case.id) }}">
+        <div class="form-row">
+            <!-- Row 1 -->
+            <label for="case_number">Case Number:</label>
+            <input type="text" id="case_number" name="case_number" value="{{ case.case_number }}" required>
+            <label for="description">Description:</label>
+            <input type="text" id="description" name="description" value="{{ case.description }}" required>
+        </div>
+
+        <div class="form-row">
+            <!-- Row 2 -->
+            <label for="status">Status:</label>
+            <select id="status" name="status" required>
+                <option value="Pending" {% if case.status =="Pending" %}selected{% endif %}>Pending</option>
+                <option value="Resolved" {% if case.status =="Resolved" %}selected{% endif %}>Resolved</option>
+                <option value="Cancelled" {% if case.status =="Cancelled" %}selected{% endif %}>Cancelled</option>
+            </select>
+            <label for="court_date">Court Date:</label>
+            <input type="date" id="court_date" name="court_date" value="{{ case.court_date }}">
+        </div>
+
+        <div class="form-row">
+            <!-- Row 3 -->
+            <label for="created_by">Created By:</label>
+            <select id="created_by" name="created_by">
+                {% for user in users %}
+                <option value="{{ user.id }}" {% if case.created_by == user.username %}selected{% endif %}>
+                    {{ user.username }}
+                </option>
+                {% endfor %}
+            </select>
+            <label for="assigned_to">Assigned To:</label>
+            <select id="assigned_to" name="assigned_to">
+                {% for user in users %}
+                <option value="{{ user.id }}" {% if case.assigned_to == user.username %}selected{% endif %}>
+                    {{ user.username }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="save-btn">Save Changes</button>
+    </form>
+</section>
+{% elif view == 'add_user' %}
+<!-- Add User Form -->
+<section class="add-user-section">
+    <h2>Add New User</h2>
+    <form id="add-user-form" method="POST" action="{{ url_for('add_user') }}">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+
+        <label for="role">Role:</label>
+        <select id="role" name="role">
+            <option value="admin">Admin</option>
+            <option value="officer">Officer</option>
+            <option value="viewer">Viewer</option>
+        </select>
+
+        <label for="avatar_path">Profile Image:</label>
+        <input type="file" id="avatar_path" name="avatar_path" accept=".jpg,.jpeg,.png">
+
+        <button type="submit">Add User</button>
+    </form>
+</section>
+
+{% elif view == 'add_case' %}
+<!-- Add Case Form -->
+<section class="add-case-section">
+    <h2>Add New Case</h2>
+    <form id="add-case-form" method="POST" action="{{ url_for('add_case') }}">
+        <div class="form-row1">
+            <div class="form-column">
+                <label for="case_number">Case Number:</label>
+                <input type="text" id="case_number" name="case_number" required>
+            </div>
+            <div class="form-column">
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" required></textarea>
+            </div>
+        </div>
+
+        <div class="form-row1">
+            <div class="form-column">
+                <label for="status">Status:</label>
+                <select id="status" name="status">
+                    <option value="Pending">Pending</option>
+                    <option value="Resolved">Resolved</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div class="form-column">
+                <label for="court_date">Court Date:</label>
+                <input type="date" id="court_date" name="court_date">
+            </div>
+        </div>
+
+        <div class="form-row1">
+            <div class="form-column">
+                <label for="created_by">Created By:</label>
+                <select id="created_by" name="created_by">
+                    {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-column">
+                <label for="assigned_to">Assigned To:</label>
+                <select id="assigned_to" name="assigned_to">
+                    {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <button type="submit" class="add-case-btn">Add Case</button>
+        </div>
+    </form>
+</section>
+{% elif view == 'reports' %}
+<!-- Reports Section -->
+<section class="reports-section">
+    <h2>Police Case Reports</h2>
+
+    <!-- Case Status Summary -->
+    <div class="report-box">
+        <h3>Case Status Summary</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Total Cases</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for status in case_status %}
+                <tr>
+                    <td>{{ status.status }}</td>
+                    <td>{{ status.total }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Crime Analysis -->
+    <div class="report-box">
+        <h3>Crime Analysis</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Crime Type</th>
+                    <th>Frequency</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for crime in crime_stats %}
+                <tr>
+                    <td>{{ crime.crime_type }}</td>
+                    <td>{{ crime.frequency }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Officer Activity -->
+    <div class="report-box">
+        <h3>Officer Activity</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Officer</th>
+                    <th>Cases Handled</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for officer in officer_activity %}
+                <tr>
+                    <td>{{ officer.username }}</td>
+                    <td>{{ officer.cases_handled }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Arrests -->
+    <div class="report-box">
+        <h3>Arrests & Convictions</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Suspect Name</th>
+                    <th>Outcome</th>
+                    <th>Arrest Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for arrest in arrest_records %}
+                <tr>
+                    <td>{{ arrest.suspect_name }}</td>
+                    <td>{{ arrest.outcome }}</td>
+                    <td>{{ arrest.arrest_date }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Upcoming Court Dates -->
+    <div class="report-box">
+        <h3>Upcoming Court Dates</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Case Number</th>
+                    <th>Court Date</th>
+                    <th>Judge</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for court in court_schedules %}
+                <tr>
+                    <td>{{ court.case_number }}</td>
+                    <td>{{ court.court_date }}</td>
+                    <td>{{ court.judge }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% else %}
+<!-- Default Message -->
+<h2>This web page is under Maintenance please be patient with us </h2>
+{% endif %}
+</main>
+<!-- Footer -->
+    <footer class="footer">
+        Copyright &copy;&nbsp;&nbsp;<span id="current-year"></span>&nbsp;&nbsp;&nbsp; Police Case Management System
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <p class="mail-to"><b>PCMS - Py (by: <a href="mailto=njebzncele@gmail.com" target="blank">Son of all</a> )</b></p>&nbsp; v1.0
+    </footer>
+</body>
+</html>

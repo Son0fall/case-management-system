@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base | Police Case Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"> <!-- Link to shared CSS -->
+    <script src="{{ url_for('static', filename='js/sidebar.js') }}" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        html, body{
+          height:calc(100%) !important;
+          width:calc(100%) !important;
+        }
+        body{
+          background-image: url("{{ url_for('static', filename='images/decorative.png') }}");
+          background-size:cover;
+          background-repeat:no-repeat;
+        }
+        .login-title{
+          text-shadow: 2px 2px black
+        }
+        #login{
+          flex-direction:column !important
+        }
+        #logo-img{
+            height:150px;
+            width:150px;
+            object-fit:scale-down;
+            object-position:center center;
+            border-radius:100%;
+        }
+        #login .col-7,#login .col-5{
+          width: 100% !important;
+          max-width:unset !important
+        }
+        p a{
+          text-decoration: none;
+          color: #ffffff;
+        }
+        p a:hover{
+          text-decoration: none;
+          color: #ffffff;
+        }
+      </style>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('toggle-sidebar-btn');
+    const footer = document.querySelector('.footer');
+
+    // Toggle sidebar visibility
+    toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+        footer.classList.toggle('open');
+    });
+
+    // Update footer year dynamically
+    const yearSpan = document.getElementById('current-year');
+    yearSpan.textContent = new Date().getFullYear();
+});
+
+</script>
+</head>
+<body>
+    <div class="base-container">
+        <div class="col-7 h-100 d-flex align-items-center justify-content-center">
+            <div class="w-100">
+              <center><img src="{{ url_for('static', filename='images/logo.png') }}" alt="logo" id="logo-img"></center>
+              <h1 class="text-center py-5 login-title"><b></b></h1>
+            </div>
+          </div>
+        <p><b><i>Police Case Management System</b></i></p>
+        <div class="buttons">
+            <button onclick="window.location.href='/login'">Login</button>
+            <button onclick="window.close()">Exit</button>
+        </div>
+        <p>
+            &copy;&nbsp;&nbsp;<span id="current-year"></span>&nbsp;&nbsp;&nbsp; <a href="{{ url_for('create_account') }}">Police Case Management System</a>
+        </p>
+    </div>
+</body>
+</html>
+

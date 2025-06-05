@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update User</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <form method="POST" action="/update_case/{{ case.id }}" class="update-user-form">
+        <label for="case_number">Case Number:</label>
+        <input type="text" id="case_number" name="case_number" value="{{ case.case_number }}" required>
+
+        <label for="description">Description:</label>
+        <input type="text" id="description" name="description" value="{{ case.description }}" required>
+
+        <label for="status">Status:</label>
+        <input type="status" id="status" name="status" value="{{ case.status }}" required>
+
+        <label for="created_by">Created By:</label>
+        <input type="text" id="created_by" name="created_by" value="{{ case.created_by }}" required>
+
+        <label for="assigned_to">Assigned To:</label>
+        <input type="text" id="assigned_to" name="assigned_to" value="{{ case.assigned_to }}" required>
+        
+        <label for="court_date">Court date:</label>
+        <input type="date" id="court_date" name="court_date" value="{{ case.court_date }}" required>
+        
+        <label for="created_at">Created At:</label>
+        <input type="date" id="created_at" name="created_at" value="{{ case.created_at }}" required>
+
+
+        <button type="submit">Save Changes</button>
+    </form>
+</body>
+</html>

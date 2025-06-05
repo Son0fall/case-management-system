@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Face Recognition System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/face-login-css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Face Recognition Login</h2>
+
+        <!-- Step 1: Face Capture Screen FIRST -->
+        <div id="video-container" class="video-container">
+            <video id="video" autoplay></video>
+            <button onclick="openRegisterForm()">Register Face</button>
+            <button id="login-btn" onclick="loginWithFace()">Login with Face</button>
+        </div>
+
+        <!-- Step 2: Pop-up Registration Form -->
+        <div id="popup-form" class="popup">
+            <h3>Complete Your Registration</h3>
+            <form id="register-form">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" placeholder="Enter username" required>
+
+                <label for="role">Role:</label>
+                <input type="text" id="role" name="role" placeholder="Enter role" required>
+
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" placeholder="Enter email" required>
+
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" placeholder="Enter password" required>
+
+                <label for="avatar_path">Avatar Path:</label>
+                <input type="text" id="avatar_path" name="avatar_path" placeholder="Enter avatar path" required>
+
+                <button type="button" onclick="proceedToFaceEncoding()">Proceed</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openRegisterForm() {
+            document.getElementById("popup-form").style.display = "block";
+        }
+
+        function proceedToFaceEncoding() {
+            document.getElementById("popup-form").style.display = "none";
+            document.getElementById("video-container").style.display = "flex"; // ✅ Show the camera frame
+            document.getElementById("login-btn").style.display = "none"; // ✅ Hide login until encoding is complete
+
+            // ✅ Ensure the webcam starts correctly
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+                .then(stream => {
+                    document.getElementById('video').srcObject = stream;
+                })
+                .catch(err => console.error("Error accessing webcam:", err));
+        }
+
+        function captureFace() {
+            const video = document.getElementById('video');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const imageData = canvas.toDataURL('image/jpeg');
+
+            fetch('/register_face', {
+                method: 'POST',
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                    username: document.getElementById('username').value,
+                    role: document.getElementById('role').value,
+                    email: document.getElementById('email').value,
+                    password: document.getElementById('password').value,
+                    avatar_path: document.getElementById('avatar_path').value,
+                    image: imageData
+                })
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      alert("Face registration successful!");
+                      document.getElementById("login-btn").style.display = "block";  // ✅ Show login button only after encoding
+                  } else {
+                      alert(data.error);
+                  }
+              }).catch(err => console.error("Error sending image:", err));
+        }
+
+        function loginWithFace() {
+            const video = document.getElementById('video');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const imageData = canvas.toDataURL('image/jpeg');
+
+            fetch('/login_face', {
+                method: 'POST',
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ image: imageData })
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      window.location.href = data.redirect;
+                  } else {
+                      alert(data.error);
+                  }
+              }).catch(err => console.error("Error sending image:", err));
+        }
+        
+    function openRegisterForm() {
+        document.getElementById("popup-form").style.display = "block";
+    }
+
+    function proceedToFaceEncoding() {
+        // ✅ First, register the user with their details
+        fetch('/register_user', {
+            method: 'POST',
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+                username: document.getElementById('username').value,
+                role: document.getElementById('role').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                avatar_path: document.getElementById('avatar_path').value
+            })
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  document.getElementById("popup-form").style.display = "none";
+                  document.getElementById("video-container").style.display = "flex";
+                  document.getElementById("login-btn").style.display = "none";
+
+                  // ✅ Start the webcam for face encoding
+                  navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+                      .then(stream => {
+                          document.getElementById('video').srcObject = stream;
+                      })
+                      .catch(err => console.error("Error accessing webcam:", err));
+              } else {
+                  alert(data.error);
+              }
+          });
+    }
+
+    function captureFace() {
+        const video = document.getElementById('video');
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const imageData = canvas.toDataURL('image/jpeg');
+
+        fetch('/register_face', {
+            method: 'POST',
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+                username: document.getElementById('username').value,
+                image: imageData
+            })
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  alert("Face registration successful!");
+                  document.getElementById("login-btn").style.display = "block"; // ✅ Show login button only after encoding
+              } else {
+                  alert(data.error);
+              }
+          }).catch(err => console.error("Error sending image:", err));
+    }
+
+    function loginWithFace() {
+        const video = document.getElementById('video');
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const imageData = canvas.toDataURL('image/jpeg');
+
+        fetch('/login_face', {
+            method: 'POST',
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ image: imageData })
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  window.location.href = data.redirect;
+              } else {
+                  alert(data.error);
+              }
+          }).catch(err => console.error("Error sending image:", err));
+    }
+</script>
+</body>
+</html>

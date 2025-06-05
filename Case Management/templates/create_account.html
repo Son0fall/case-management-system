@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account | Police Case Management System</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}"> <!-- Your existing stylesheet -->
+  <!-- Include the new CSS for the create account form -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/create_account.css') }}">
+  <style>
+    html, body {
+      height: 100%;
+      width: 100%;
+    }
+    body {
+      background-image: url("{{ url_for('static', filename='images/decorative.png') }}");
+      background-size: cover;
+      background-repeat: no-repeat;
+    }
+    .login-title {
+      text-shadow: 2px 2px black;
+    }
+    #login {
+      flex-direction: column !important;
+    }
+    #logo-img {
+      height: 150px;
+      width: 150px;
+      object-fit: scale-down;
+      object-position: center center;
+      border-radius: 100%;
+    }
+    #login .col-7, #login .col-5 {
+      width: 100% !important;
+      max-width: unset !important;
+    }
+    /* Container for the create account form with a light grey background */
+.create-account-container {
+  background-color: #f2f2f2; /* Light grey */
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  width: 90%;
+  max-width: 800px; /* Increased to 800px for a wider form */
+  margin: 40px auto;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Heading styling */
+.create-account-container h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+/* Grid layout for the form */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* Each form group (label and input) */
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Full width fields that should span both columns */
+.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Label styling */
+.form-group label {
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #444;
+}
+
+/* Input, select, and button styling */
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+/* Submit button styling */
+.form-group button {
+  padding: 12px;
+  background-color: #007BFF;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  width: 100%;
+}
+
+.form-group button:hover {
+  background-color: #0056b3;
+}
+
+/* Custom file picker button styling */
+.custom-file-upload input[type="file"] {
+  display: none;
+}
+
+.custom-file-upload {
+  display: inline-block;
+  padding: 10px 15px;
+  cursor: pointer;
+  background-color: #007BFF;
+  color: #fff;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+  text-align: center;
+  font-weight: 600;
+}
+
+.custom-file-upload:hover {
+  background-color: #0056b3;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 600px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="create-account-container">
+      <h2>Create Account</h2>
+      {% if error %}
+        <p style="color: red;">{{ error }}</p>
+      {% endif %}
+      {% if success %}
+        <p style="color: green;">{{ success }}</p>
+      {% endif %}
+      <form id="create-account-form" method="POST" action="/create_account">
+        <div class="form-grid">
+          <!-- Row 1: Username and Email -->
+          <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+          <!-- Row 2: Password and Role -->
+          <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+          </div>
+          <div class="form-group">
+            <label for="role">Role:</label>
+            <select id="role" name="role" required>
+              <option value="Admin">Admin</option>
+              <option value="Officer">Officer</option>
+              <option value="Clerk">Clerk</option>
+            </select>
+          </div>
+          <!-- Row 3: Full width file picker field for avatar -->
+          <div class="form-group full-width">
+            <label for="avatar_path">Avatar:</label>
+            <label for="avatar_path" class="custom-file-upload">
+              <input type="file" id="avatar_path" name="avatar_path" accept="image/*" required>
+              Choose Image
+            </label>
+          </div>
+          <!-- Row 4: Submit button -->
+          <div class="form-group full-width">
+            <button type="submit">Create Account</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

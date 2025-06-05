@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Face Recognition Login</title>
+    <script defer>
+        function captureFace(actionUrl) {
+            const video = document.getElementById('video');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const imageData = canvas.toDataURL('image/jpeg');
+
+            fetch(actionUrl, {
+                method: 'POST',
+                body: new FormData(document.getElementById('face-form'))
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      window.location.href = data.redirect;
+                  } else {
+                      alert(data.error);
+                  }
+              });
+        }
+    </script>
+</head>
+<body>
+    <h2>Face Recognition Login</h2>
+
+    <video id="video" autoplay></video>
+    <button onclick="captureFace('/login_face')">Login with Face</button>
+
+    <form id="face-form">
+        <input type="hidden" name="username">
+        <input type="hidden" name="role">
+    </form>
+
+    <script>
+        // Open webcam
+        navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+            document.getElementById('video').srcObject = stream;
+        }).catch(err => console.error("Error accessing webcam:", err));
+    </script>
+</body>
+</html>
+
